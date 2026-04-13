@@ -40,7 +40,15 @@ class Builder:
         system  = _BASE_SYSTEM + (f"\n\n{context}" if context else "")
         prompt  = self._build_prompt(spec, critique)
         data    = self.provider.execute(system, prompt)
-        return BuildOutput(**data)
+        out     = BuildOutput(**data)
+        # Fill defaults from spec if model omitted them
+        if not out.language:
+            out.language = spec.language
+        if not out.filename:
+            ext = {"python": ".py", "javascript": ".js", "typescript": ".ts",
+                   "html": ".html", "css": ".css", "java": ".java"}.get(spec.language.lower(), ".txt")
+            out.filename = f"output{ext}"
+        return out
 
     def _build_prompt(self, spec: Specification, critique: Optional[CritiqueReport]) -> str:
         lines = [

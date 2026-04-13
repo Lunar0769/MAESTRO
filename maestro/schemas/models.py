@@ -61,10 +61,10 @@ class Specification(BaseModel):
 
 class BuildOutput(BaseModel):
     code:                    str
-    language:                str
-    filename:                str
+    language:                str = ""
+    filename:                str = ""
     dependencies:            List[str] = []
-    addressed_requirements:  List[str]
+    addressed_requirements:  List[str] = []
     implementation_notes:    str = ""
 
 

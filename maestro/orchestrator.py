@@ -185,8 +185,9 @@ def _print_summary(spec, build, ca, cb):
     for r in spec.requirements:
         ea = next((e for e in ca.requirement_evaluations if e.requirement_id == r.id), None)
         eb = next((e for e in cb.requirement_evaluations if e.requirement_id == r.id), None)
-        sa = ea.status if ea else "?"
-        sb = eb.status if eb else "?"
+        # Use .value to get the string, not the enum repr
+        sa = ea.status.value if ea else "?"
+        sb = eb.status.value if eb else "?"
         icon = "✅" if sa == "SATISFIED" and sb == "SATISFIED" else "⚠️ "
         print(f"  {icon} {r.id}: {r.description[:55]}")
         print(f"       gemma4={sa}  qwen3={sb}")
