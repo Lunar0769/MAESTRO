@@ -1,0 +1,9 @@
+ollama:
+  base_url: "http://localhost:11434"
+  planner_model: "gemma4:e4b"   # Plans, designs, specifies
+  executor_model: "qwen3:8b"    # Builds, tests, critiques
+
+orchestration:
+  max_iterations: 15            # Loop until both models approve
+  production_threshold: 80      # Min score to pass
+  timeout_seconds: 120          # Per-model call timeout
