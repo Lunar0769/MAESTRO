@@ -3,7 +3,7 @@ Planner agent — uses gemma4:e4b to analyse the task and produce a Specificatio
 Memory context is injected so it learns from past runs.
 """
 from maestro.schemas.models import Specification
-from maestro.memory import store
+from maestro.memory.manager import MemoryManager
 
 _BASE_SYSTEM = """You are a senior software architect (Planner).
 Your ONLY job is to analyse a task and produce a structured specification.
@@ -31,14 +31,13 @@ Output ONLY the JSON. No markdown. No explanation."""
 
 
 class Planner:
-    def __init__(self, provider):
+    def __init__(self, provider, memory=None):
         self.provider = provider
+        self.memory   = memory
 
     def plan(self, task: str, language_hint: str = None) -> Specification:
-        memory_block = store.build_memory_block()
-        system = _BASE_SYSTEM
-        if memory_block:
-            system = _BASE_SYSTEM + f"\n\n{memory_block}"
+        context = self.memory.get_learning_context() if self.memory else ""
+        system  = _BASE_SYSTEM + (f"\n\n{context}" if context else "")
 
         prompt = f'Task: "{task}"'
         if language_hint:

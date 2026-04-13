@@ -3,7 +3,6 @@ Builder agent — uses qwen3:8b to generate code from a Specification.
 Memory context is injected so it avoids past mistakes.
 """
 from maestro.schemas.models import Specification, BuildOutput, CritiqueReport
-from maestro.memory import store
 from typing import Optional
 
 _BASE_SYSTEM = """You are an expert software engineer (Builder).
@@ -32,21 +31,15 @@ Output ONLY the JSON. No markdown. No explanation."""
 
 
 class Builder:
-    def __init__(self, provider):
+    def __init__(self, provider, memory=None):
         self.provider = provider
+        self.memory   = memory
 
-    def build(
-        self,
-        spec: Specification,
-        critique: Optional[CritiqueReport] = None,
-    ) -> BuildOutput:
-        memory_block = store.build_memory_block()
-        system = _BASE_SYSTEM
-        if memory_block:
-            system = _BASE_SYSTEM + f"\n\n{memory_block}"
-
-        prompt = self._build_prompt(spec, critique)
-        data = self.provider.execute(system, prompt)
+    def build(self, spec: Specification, critique: Optional[CritiqueReport] = None) -> BuildOutput:
+        context = self.memory.get_learning_context() if self.memory else ""
+        system  = _BASE_SYSTEM + (f"\n\n{context}" if context else "")
+        prompt  = self._build_prompt(spec, critique)
+        data    = self.provider.execute(system, prompt)
         return BuildOutput(**data)
 
     def _build_prompt(self, spec: Specification, critique: Optional[CritiqueReport]) -> str:

@@ -10,42 +10,39 @@ from maestro.orchestrator import run
 
 
 def _cmd_memory(args):
-    from maestro.memory import store as m
-    import json
+    from maestro.memory.manager import MemoryManager, MEMORY_FILE
+    import os
 
     if args and args[0] == "clear":
-        from pathlib import Path
-        p = Path("memory/knowledge.json")
-        if p.exists():
-            p.unlink()
+        if os.path.exists(MEMORY_FILE):
+            os.remove(MEMORY_FILE)
         print("🗑  Memory cleared.")
         return
 
-    data = m._load()
+    mm   = MemoryManager()
+    data = mm.memory
     print("\n🧠 MAESTRO MEMORY\n" + "=" * 50)
 
-    mistakes = sorted(data.get("mistakes", []), key=lambda x: x.get("frequency", 1), reverse=True)
-    print(f"\n📌 Top Mistakes ({len(mistakes)}):")
-    for i, mk in enumerate(mistakes[:5], 1):
-        print(f"  {i}. [{mk.get('frequency',1)}x] {mk['pattern'][:70]}")
-        print(f"     Fix: {mk['fix'][:80]}")
+    mistakes = sorted(data.get("mistakes", []), key=lambda x: x.get("count", 1), reverse=True)
+    print(f"\n📌 Mistakes ({len(mistakes)}):")
+    for i, m in enumerate(mistakes[:8], 1):
+        print(f"  {i}. [{m.get('count',1)}x] {m['pattern'][:70]}")
+        print(f"     Fix: {m['fix'][:80]}")
 
-    practices = sorted(data.get("best_practices", []), key=lambda x: x.get("frequency", 1), reverse=True)
+    practices = sorted(data.get("best_practices", []), key=lambda x: x.get("count", 1), reverse=True)
     print(f"\n✅ Best Practices ({len(practices)}):")
     for i, bp in enumerate(practices[:5], 1):
-        print(f"  {i}. [{bp.get('frequency',1)}x] {bp['pattern'][:70]}")
+        print(f"  {i}. [{bp.get('count',1)}x] {bp['pattern'][:70]}")
 
     rules = data.get("prompt_rules", [])
-    print(f"\n⚡ Active Prompt Rules ({len(rules)}):")
+    print(f"\n⚡ Active Rules ({len(rules)}):")
     for i, r in enumerate(rules, 1):
         print(f"  {i}. {r}")
 
-    runs = data.get("run_log", [])
-    print(f"\n📊 Run History ({len(runs)} total):")
-    for r in runs[-5:]:
-        status = "✅" if r.get("success") else "❌"
-        print(f"  {status} score={r.get('score',0):.0f} iter={r.get('iterations',0)} | {r.get('task','')[:60]}")
-
+    history = data.get("task_history", [])
+    print(f"\n📊 Task History ({len(history)} total):")
+    for r in history[-5:]:
+        print(f"  score={r.get('score', 0):.0f} | {r.get('task', '')[:60]}")
     print()
 
 
