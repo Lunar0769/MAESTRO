@@ -51,32 +51,26 @@ class Builder:
         return out
 
     def _build_prompt(self, spec: Specification, critique: Optional[CritiqueReport]) -> str:
+        reqs = "\n".join(
+            f"  {r.id}: {r.description} | accept: {r.acceptance_criteria}"
+            for r in spec.requirements
+        )
+        steps = "\n".join(f"  {i}. {s}" for i, s in enumerate(spec.implementation_steps, 1))
         lines = [
             f"Language: {spec.language}",
             f"Task: {spec.task_understanding}",
-            "",
-            "Requirements:",
+            f"\nRequirements:\n{reqs}",
+            f"\nSteps:\n{steps}",
         ]
-        for r in spec.requirements:
-            lines.append(f"  {r.id}: {r.description}")
-            lines.append(f"    Acceptance: {r.acceptance_criteria}")
-
-        lines += ["", f"Architecture: {spec.architecture}", "", "Steps:"]
-        for i, s in enumerate(spec.implementation_steps, 1):
-            lines.append(f"  {i}. {s}")
-
         if critique:
-            lines += ["", "=" * 40, "PREVIOUS CRITIQUE — FIX THESE:"]
             failed = [e for e in critique.requirement_evaluations
                       if e.status in ("FAILED", "PARTIALLY_SATISFIED")]
-            for e in failed:
-                lines.append(f"  {e.requirement_id} [{e.status}]: {e.reasoning}")
-
-            blocking = [i for i in critique.issues
-                        if i.severity in ("CRITICAL", "HIGH")]
-            for i in blocking:
-                lines.append(f"  {i.id} [{i.severity}]: {i.description}")
-                lines.append(f"    Fix: {i.recommendation}")
-
-        lines.append("\nGenerate the implementation JSON now.")
+            blocking = [i for i in critique.issues if i.severity in ("CRITICAL", "HIGH")]
+            if failed or blocking:
+                lines.append("\nFIX THESE ISSUES:")
+                for e in failed:
+                    lines.append(f"  {e.requirement_id} [{e.status}]: {e.reasoning}")
+                for i in blocking:
+                    lines.append(f"  {i.id} [{i.severity}]: {i.description} → {i.recommendation}")
+        lines.append("\nGenerate implementation JSON now.")
         return "\n".join(lines)

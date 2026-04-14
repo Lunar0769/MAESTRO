@@ -88,24 +88,24 @@ class Orchestrator:
                 errors.append(f"Builder failed {label}: {e}")
                 break
 
-            # Critic A — gemma4
-            print(f"🔍 [gemma4] Critiquing {label} …")
+            # ── Critics run IN PARALLEL ───────────────────────────────────
+            print(f"🔍 [gemma4+qwen3] Critiquing {label} …")
             try:
-                critique_a = self.critic_a.critique(spec, build, task)
-                log_run(f"critic_planner_{iteration}", critique_a.model_dump())
-                _show_critique("gemma4", critique_a)
-            except Exception as e:
-                errors.append(f"Critic-A failed {label}: {e}")
-                break
-
-            # Critic B — qwen3
-            print(f"🔍 [qwen3]  Critiquing {label} …")
-            try:
-                critique_b = self.critic_b.critique(spec, build, task)
+                prompt_a = self.critic_a._prompt(spec, build, task)
+                prompt_b = self.critic_b._prompt(spec, build, task)
+                from maestro.agents.critic import SYSTEM as CRITIC_SYSTEM
+                raw_a, raw_b = self.provider.dual_critique(
+                    CRITIC_SYSTEM, prompt_a,
+                    CRITIC_SYSTEM, prompt_b,
+                )
+                critique_a = CritiqueReport(**raw_a)
+                critique_b = CritiqueReport(**raw_b)
+                log_run(f"critic_planner_{iteration}",  critique_a.model_dump())
                 log_run(f"critic_executor_{iteration}", critique_b.model_dump())
-                _show_critique("qwen3", critique_b)
+                _show_critique("gemma4", critique_a)
+                _show_critique("qwen3 ", critique_b)
             except Exception as e:
-                errors.append(f"Critic-B failed {label}: {e}")
+                errors.append(f"Critics failed {label}: {e}")
                 break
 
             avg_score = (
